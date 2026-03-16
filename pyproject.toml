@@ -1,0 +1,16 @@
+[project]
+name = "shell-rft"
+version = "0.1.0"
+description = "Reinforcement fine-tuning for shell command generation"
+requires-python = ">=3.11"
+dependencies = [
+    "fireworks-ai[reward-kit]",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

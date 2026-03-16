@@ -1,0 +1,16 @@
+[project]
+name = "shell-rft-v0"
+version = "0.1.0"
+description = "Shell RFT evaluator for Fireworks Build SDK"
+requires-python = ">=3.11"
+dependencies = [
+    "fireworks-ai[reward-kit]",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
