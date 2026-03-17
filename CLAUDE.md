@@ -96,6 +96,11 @@ Each evaluation gets a fresh temp directory, a ~2s timeout, no network, and cons
 
 Do not add new task families without good reason.
 
+## Planning
+
+- Use a single `.ai/plans/` directory for milestone plans. Do not separate specs from plans — each milestone gets one document that covers both design and implementation steps.
+- The design doc at `.ai/OVERALL_DESIGN.md` is the top-level source of truth. Milestone plans expand on it with implementation detail.
+
 ## Style guidelines
 
 - Keep things simple. This project values evaluator trustworthiness over cleverness.
