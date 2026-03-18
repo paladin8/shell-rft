@@ -3,8 +3,9 @@
 from shell_rft.generation import GENERATORS
 
 
-def test_registry_contains_file_counting():
-    assert "file_counting" in GENERATORS
+def test_registry_contains_all_families():
+    expected = {"file_counting", "content_search", "topk_by_size", "csv_filtering"}
+    assert set(GENERATORS.keys()) == expected
 
 
 def test_registry_values_are_callable():
