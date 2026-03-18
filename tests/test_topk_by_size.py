@@ -53,7 +53,7 @@ def test_expected_paths_exist_in_workspace():
 
 
 def test_all_sub_types_exercised():
-    """All 3 sub-types should appear across a reasonable sample."""
+    """All 5 sub-types should appear across a reasonable sample."""
     examples = generate_topk_by_size_examples(100, random.Random(42))
     tasks = [ex.messages[1]["content"] for ex in examples]
     # _largest_by_extension: "largest .ext files under" (dot before "files")
@@ -62,3 +62,7 @@ def test_all_sub_types_exercised():
     assert any("largest files under" in t for t in tasks), "No _largest_in_dir examples"
     # _smallest_in_dir: "smallest"
     assert any("smallest" in t for t in tasks), "No _smallest_in_dir examples"
+    # _largest_excluding_subdir: "excluding"
+    assert any("excluding" in t for t in tasks), "No _largest_excluding_subdir examples"
+    # _range_by_size: "through" with ordinals
+    assert any("through" in t for t in tasks), "No _range_by_size examples"

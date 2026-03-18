@@ -134,10 +134,80 @@ def _smallest_in_dir(rng: random.Random) -> Example:
             return _make_example(task, files, expected)
 
 
+def _ordinal(n: int) -> str:
+    """Return ordinal string for n, e.g. 1 -> '1st', 3 -> '3rd'."""
+    if 11 <= n % 100 <= 13:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
+def _largest_excluding_subdir(rng: random.Random) -> Example:
+    """K largest files under a directory, excluding a subdirectory."""
+    while True:
+        files = _build_sized_workspace(rng)
+        # Find (top_dir, sub_dir) pairs present in the workspace.
+        subdir_pairs: list[tuple[str, str]] = []
+        seen_pairs: set[tuple[str, str]] = set()
+        for f in files:
+            parts = f.path.split("/")
+            if len(parts) >= 3:
+                pair = (parts[0], parts[1])
+                if pair not in seen_pairs:
+                    seen_pairs.add(pair)
+                    subdir_pairs.append(pair)
+
+        rng.shuffle(subdir_pairs)
+        for top_dir, sub_dir in subdir_pairs:
+            excluded_prefix = f"{top_dir}/{sub_dir}/"
+            remaining = [
+                f for f in files
+                if f.path.startswith(f"{top_dir}/")
+                and not f.path.startswith(excluded_prefix)
+            ]
+            excluded = [
+                f for f in files if f.path.startswith(excluded_prefix)
+            ]
+            if len(remaining) >= 2 and len(excluded) >= 1:
+                remaining.sort(key=lambda f: len(f.content), reverse=True)
+                k = rng.randint(2, min(4, len(remaining)))
+                top_k = remaining[:k]
+                task = (
+                    f"Print the {k} largest files under {top_dir}/, "
+                    f"excluding {top_dir}/{sub_dir}/, "
+                    f"one per line, largest first."
+                )
+                expected = "\n".join(f.path for f in top_k) + "\n"
+                return _make_example(task, files, expected)
+
+
+def _range_by_size(rng: random.Random) -> Example:
+    """Files ranked Nth through Mth by size under a directory."""
+    while True:
+        files = _build_sized_workspace(rng)
+        dirs = sorted({f.path.split("/")[0] for f in files})
+        target_dir = rng.choice(dirs)
+        matching = [f for f in files if f.path.startswith(f"{target_dir}/")]
+        if len(matching) >= 5:
+            matching.sort(key=lambda f: len(f.content), reverse=True)
+            start = rng.randint(2, len(matching) - 2)
+            end = rng.randint(start + 1, min(start + 3, len(matching)))
+            range_files = matching[start - 1 : end]
+            task = (
+                f"Print the {_ordinal(start)} through {_ordinal(end)} largest "
+                f"files under {target_dir}/, one per line, largest first."
+            )
+            expected = "\n".join(f.path for f in range_files) + "\n"
+            return _make_example(task, files, expected)
+
+
 _SUB_TYPES = [
     _largest_by_extension,
     _largest_in_dir,
     _smallest_in_dir,
+    _largest_excluding_subdir,
+    _range_by_size,
 ]
 
 

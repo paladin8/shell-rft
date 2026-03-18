@@ -12,9 +12,9 @@ from shell_rft.generation import GENERATORS
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate shell-rft datasets")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--train-n", type=int, default=200)
-    parser.add_argument("--val-n", type=int, default=50)
-    parser.add_argument("--test-n", type=int, default=50)
+    parser.add_argument("--train-n", type=int, default=500)
+    parser.add_argument("--val-n", type=int, default=100)
+    parser.add_argument("--test-n", type=int, default=100)
     parser.add_argument("--output-dir", type=str, default="data")
     args = parser.parse_args()
 
