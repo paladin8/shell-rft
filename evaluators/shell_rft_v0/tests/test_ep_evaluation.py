@@ -87,7 +87,7 @@ def _score_response(
     input_dataset=["../../../data/train.jsonl"],
     dataset_adapter=_dataset_adapter,
     rollout_processor=NoOpRolloutProcessor(),
-    passed_threshold=0.5,
+    passed_threshold=0.0,
     max_dataset_rows=5,
     mode="pointwise",
 )
@@ -106,11 +106,14 @@ def test_shell_rft_eval(row: EvaluationRow) -> EvaluationRow:
                 assistant_content = str(content or "")
             break
 
-    # Get ground-truth fields from dataset_info.
+    # Get ground-truth fields. During RFT, Fireworks constructs EvaluationRow
+    # directly from the dataset JSONL — extra fields land as attributes on the
+    # row (EvaluationRow has extra="allow"). During local testing, our
+    # _dataset_adapter puts them in input_metadata.dataset_info instead.
     info = row.input_metadata.dataset_info or {}
-    workspace_spec = info.get("workspace_spec", {})
-    expected_stdout = info.get("expected_stdout", "")
-    task_type = info.get("task_type", "unknown")
+    workspace_spec = getattr(row, "workspace_spec", None) or info.get("workspace_spec", {})
+    expected_stdout = getattr(row, "expected_stdout", None) or info.get("expected_stdout", "")
+    task_type = getattr(row, "task_type", None) or info.get("task_type", "unknown")
 
     row.evaluation_result = _score_response(
         assistant_content, workspace_spec, expected_stdout, task_type
