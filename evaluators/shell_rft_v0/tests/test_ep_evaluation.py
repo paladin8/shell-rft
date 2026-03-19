@@ -88,6 +88,10 @@ def _score_response(
 @evaluation_test(
     input_dataset=["../../../data/train.jsonl"],
     dataset_adapter=_dataset_adapter,
+    completion_params=[{
+        "model": "fireworks_ai/accounts/fireworks/models/qwen3-8b",
+        "max_tokens": 4096,
+    }],
     rollout_processor=SingleTurnRolloutProcessor(),
     passed_threshold=0.0,
     max_dataset_rows=5,
