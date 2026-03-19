@@ -12,9 +12,7 @@ import tempfile
 from typing import Any
 
 from eval_protocol.models import EvaluateResult, EvaluationRow, InputMetadata, Message
-from eval_protocol.pytest.default_single_turn_rollout_process import (
-    SingleTurnRolloutProcessor,
-)
+from eval_protocol.pytest import NoOpRolloutProcessor
 from eval_protocol.pytest.evaluation_test import evaluation_test
 
 from shell_rft_v0.normalize import normalize_stdout
@@ -88,7 +86,7 @@ def _score_response(
 @evaluation_test(
     input_dataset=["../../../data/train.jsonl"],
     dataset_adapter=_dataset_adapter,
-    rollout_processor=SingleTurnRolloutProcessor(),
+    rollout_processor=NoOpRolloutProcessor(),
     passed_threshold=0.5,
     max_dataset_rows=5,
     mode="pointwise",
