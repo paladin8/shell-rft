@@ -107,13 +107,14 @@ def test_shell_rft_eval(row: EvaluationRow) -> EvaluationRow:
             break
 
     # Get ground-truth fields. During RFT, Fireworks constructs EvaluationRow
-    # directly from the dataset JSONL — extra fields land as attributes on the
-    # row (EvaluationRow has extra="allow"). During local testing, our
-    # _dataset_adapter puts them in input_metadata.dataset_info instead.
+    # from the dataset JSONL — the "ground_truth" field (a standard
+    # EvaluationRow field) carries workspace_spec, expected_stdout, task_type.
+    gt = row.ground_truth if isinstance(row.ground_truth, dict) else {}
+    # Fallback to dataset_info for local testing via _dataset_adapter.
     info = row.input_metadata.dataset_info or {}
-    workspace_spec = getattr(row, "workspace_spec", None) or info.get("workspace_spec", {})
-    expected_stdout = getattr(row, "expected_stdout", None) or info.get("expected_stdout", "")
-    task_type = getattr(row, "task_type", None) or info.get("task_type", "unknown")
+    workspace_spec = gt.get("workspace_spec") or info.get("workspace_spec", {})
+    expected_stdout = gt.get("expected_stdout") or info.get("expected_stdout", "")
+    task_type = gt.get("task_type") or info.get("task_type", "unknown")
 
     row.evaluation_result = _score_response(
         assistant_content, workspace_spec, expected_stdout, task_type
