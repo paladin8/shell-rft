@@ -2,18 +2,14 @@
 
 This wraps the existing @reward_function evaluator in an @evaluation_test
 so that eval-protocol can discover, validate, and deploy it.
+
+Run from evaluators/shell_rft_v0/:
+    uv run eval-protocol create rft --base-model accounts/fireworks/models/qwen3-8b ...
 """
 
 import shutil
-import sys
 import tempfile
-from pathlib import Path
 from typing import Any
-
-# Ensure shell_rft_v0 is importable (it lives under evaluators/).
-_EVALUATOR_DIR = str(Path(__file__).resolve().parent.parent / "evaluators")
-if _EVALUATOR_DIR not in sys.path:
-    sys.path.insert(0, _EVALUATOR_DIR)
 
 from eval_protocol.models import EvaluateResult, EvaluationRow, InputMetadata, Message
 from eval_protocol.pytest.default_single_turn_rollout_process import (
@@ -21,9 +17,9 @@ from eval_protocol.pytest.default_single_turn_rollout_process import (
 )
 from eval_protocol.pytest.evaluation_test import evaluation_test
 
-from shell_rft_v0.normalize import normalize_stdout  # noqa: E402
-from shell_rft_v0.policy import extract_single_command, validate_command  # noqa: E402
-from shell_rft_v0.sandbox import materialize_workspace, run_command  # noqa: E402
+from shell_rft_v0.normalize import normalize_stdout
+from shell_rft_v0.policy import extract_single_command, validate_command
+from shell_rft_v0.sandbox import materialize_workspace, run_command
 
 
 def _dataset_adapter(rows: list[dict[str, Any]]) -> list[EvaluationRow]:
@@ -90,7 +86,7 @@ def _score_response(
 
 
 @evaluation_test(
-    input_dataset=["../data/train.jsonl"],
+    input_dataset=["../../../data/train.jsonl"],
     dataset_adapter=_dataset_adapter,
     rollout_processor=SingleTurnRolloutProcessor(),
     passed_threshold=0.5,
