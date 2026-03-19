@@ -11,6 +11,9 @@ ALLOWED_COMMANDS = frozenset([
 
 def extract_single_command(text: str) -> str | None:
     """Extract a single shell command from model output. Returns None if not exactly one."""
+    # Strip Qwen3-style reasoning blocks.
+    text = re.sub(r"<think>.*?</think>\s*", "", text, flags=re.DOTALL)
+
     # Try to extract from a markdown fenced code block first.
     fence_match = re.search(r"```(?:\w*)\n(.*?)```", text, re.DOTALL)
     if fence_match:
