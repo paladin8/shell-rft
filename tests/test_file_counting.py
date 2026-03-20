@@ -51,17 +51,20 @@ def test_expected_stdout_is_positive():
 
 
 def test_all_sub_types_exercised():
-    """All 4 sub-types should appear across a reasonable sample."""
-    examples = generate_file_counting_examples(100, random.Random(42))
+    """All 7 sub-types should appear across a reasonable sample."""
+    examples = generate_file_counting_examples(200, random.Random(42))
     tasks = {ex.messages[1]["content"] for ex in examples}
-    # Each sub-type uses a distinctive phrase in the task description.
     patterns = [
-        "Count the .",       # _count_by_extension
-        'starts with "test_"',  # _count_by_name_pattern
-        "How many files are in",  # _count_all_in_subtree
-        "contain",           # _count_files_containing
+        "Count the .",           # _count_by_extension
+        'starts with "test_"',   # _count_by_name_pattern
+        "How many files are in", # _count_all_in_subtree
+        "contain",               # _count_files_containing
+        "excluding",             # _count_by_extension_excluding_subdir
+        "distinct file extension", # _count_unique_extensions
     ]
     for pattern in patterns:
         assert any(pattern in t for t in tasks), (
             f"No examples found matching sub-type pattern: {pattern!r}"
         )
+    # _count_by_extension_and_content uses both extension and contain
+    assert any("Count the ." in t and "contain" in t for t in tasks)

@@ -50,12 +50,20 @@ def test_expected_stdout_is_non_empty():
 
 
 def test_all_sub_types_exercised():
-    """All 3 sub-types should appear across a reasonable sample."""
-    examples = generate_content_search_examples(100, random.Random(42))
+    """All 7 sub-types should appear across a reasonable sample."""
+    examples = generate_content_search_examples(200, random.Random(42))
     tasks = [ex.messages[1]["content"] for ex in examples]
     # _find_files_containing: "contain '..." but NOT "do NOT contain"
-    assert any("contain '" in t and "do NOT" not in t for t in tasks)
+    assert any("contain '" in t and "do NOT" not in t and "How many" not in t for t in tasks)
     # _grep_lines_from_file: "lines from"
-    assert any("lines from" in t for t in tasks)
+    assert any("lines from" in t and "How many" not in t for t in tasks)
     # _find_files_not_containing: "do NOT contain"
-    assert any("do NOT contain" in t for t in tasks)
+    assert any("do NOT contain" in t and "but" not in t for t in tasks)
+    # _count_matching_lines: "How many lines"
+    assert any("How many lines" in t for t in tasks)
+    # _find_files_containing_by_extension: extension + "contain"
+    assert any("files under" in t and "contain '" in t and t.count(".") >= 2 for t in tasks)
+    # _find_files_two_terms: "contain ... but do NOT contain"
+    assert any("but do NOT contain" in t for t in tasks)
+    # _count_files_containing: "How many files"
+    assert any("How many files" in t for t in tasks)

@@ -7,6 +7,7 @@ def test_allowed_commands_matches_spec():
     expected = {
         "find", "grep", "sort", "head", "tail",
         "wc", "cut", "awk", "sed", "cat", "xargs", "tr",
+        "ls", "du", "stat",
     }
     assert ALLOWED_COMMANDS == expected
 

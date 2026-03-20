@@ -4,23 +4,23 @@ from __future__ import annotations
 
 import random
 
+from shell_rft.generation.workspace import _DIRS, _SUBDIRS, _DEEP_SUBDIRS
 from shell_rft.prompts import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
 from shell_rft.schemas import Example, FileSpec, WorkspaceSpec
 
-_DIRS = ["src", "logs", "data", "app", "lib", "tests", "docs", "config"]
-_SUBDIRS = ["utils", "core", "api", "auth", "models"]
-_EXTENSIONS = [".py", ".txt", ".log", ".csv", ".json"]
+_EXTENSIONS = [".py", ".txt", ".log", ".csv", ".json", ".yaml", ".md"]
 _STEMS = [
     "main", "utils", "config", "app", "debug", "error",
-    "output", "report", "index", "helper",
+    "output", "report", "index", "helper", "server", "client",
+    "handler", "router", "schema", "worker",
 ]
 
 
 def _build_sized_workspace(rng: random.Random) -> list[FileSpec]:
-    """Create files with distinct, known sizes."""
-    n_dirs = rng.randint(2, 4)
-    n_files = rng.randint(8, 15)
-    dirs = rng.sample(_DIRS, n_dirs)
+    """Create files with distinct, known sizes across a deeper tree."""
+    n_dirs = rng.randint(3, 6)
+    n_files = rng.randint(15, 30)
+    dirs = rng.sample(_DIRS, min(n_dirs, len(_DIRS)))
 
     sizes = rng.sample(range(100, 10001), n_files)
 
@@ -29,7 +29,10 @@ def _build_sized_workspace(rng: random.Random) -> list[FileSpec]:
 
     for i in range(n_files):
         d = rng.choice(dirs)
-        if rng.random() < 0.3:
+        r = rng.random()
+        if r < 0.1:
+            d = f"{d}/{rng.choice(_SUBDIRS)}/{rng.choice(_DEEP_SUBDIRS)}"
+        elif r < 0.45:
             d = f"{d}/{rng.choice(_SUBDIRS)}"
         stem = rng.choice(_STEMS)
         ext = rng.choice(_EXTENSIONS)

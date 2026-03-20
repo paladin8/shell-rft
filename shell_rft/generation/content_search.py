@@ -4,64 +4,17 @@ from __future__ import annotations
 
 import random
 
+from shell_rft.generation.workspace import (
+    _SEARCH_TERMS,
+    build_workspace,
+)
 from shell_rft.prompts import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
 from shell_rft.schemas import Example, FileSpec, WorkspaceSpec
 
-_DIRS = ["src", "logs", "data", "app", "lib", "tests", "docs", "config"]
-_SUBDIRS = ["utils", "core", "api", "auth", "models"]
-_EXTENSIONS = [".py", ".txt", ".log", ".csv", ".json"]
-_STEMS = [
-    "main", "utils", "config", "app", "debug", "error",
-    "output", "report", "index", "helper",
-]
-_SEARCH_TERMS = ["ERROR", "TODO", "import", "timeout", "hello", "DEBUG"]
-_CONTENT_POOL = [
-    "# placeholder",
-    "import os",
-    "ERROR: connection refused",
-    "DEBUG: starting service",
-    "name,value",
-    "hello world",
-    "TODO: fix this",
-    "print('hello')",
-    "status=ok",
-    "timeout exceeded",
-    "WARNING: disk space low",
-    "import sys",
-    "return None",
-    "DEBUG: request received",
-    "ERROR: timeout exceeded",
-]
 
-
-def _build_workspace(rng: random.Random) -> list[FileSpec]:
-    """Create a random set of files across a small directory tree."""
-    n_dirs = rng.randint(2, 5)
-    n_files = rng.randint(5, 20)
-    dirs = rng.sample(_DIRS, n_dirs)
-
-    files: list[FileSpec] = []
-    seen: set[str] = set()
-
-    for i in range(n_files):
-        d = rng.choice(dirs)
-        if rng.random() < 0.3:
-            d = f"{d}/{rng.choice(_SUBDIRS)}"
-        stem = rng.choice(_STEMS)
-        ext = rng.choice(_EXTENSIONS)
-        path = f"{d}/{stem}{ext}"
-
-        if path in seen:
-            path = f"{d}/{stem}_{i}{ext}"
-        if path in seen:
-            continue
-        seen.add(path)
-
-        n_lines = rng.randint(1, 5)
-        content = "\n".join(rng.choices(_CONTENT_POOL, k=n_lines)) + "\n"
-        files.append(FileSpec(path=path, content=content))
-
-    return files
+def _file_ext(path: str) -> str:
+    dot = path.rfind(".")
+    return path[dot:] if dot != -1 else ""
 
 
 def _filesystem_summary(files: list[FileSpec]) -> str:
@@ -87,7 +40,7 @@ def _make_example(task: str, files: list[FileSpec], expected: str) -> Example:
 def _find_files_containing(rng: random.Random) -> Example:
     """List files containing a search term under a directory, sorted."""
     while True:
-        files = _build_workspace(rng)
+        files = build_workspace(rng)
         dirs = sorted({f.path.split("/")[0] for f in files})
         target_dir = rng.choice(dirs)
         terms = list(_SEARCH_TERMS)
@@ -109,7 +62,7 @@ def _find_files_containing(rng: random.Random) -> Example:
 def _grep_lines_from_file(rng: random.Random) -> Example:
     """Print matching lines from a specific file."""
     while True:
-        files = _build_workspace(rng)
+        files = build_workspace(rng)
         candidates = list(files)
         rng.shuffle(candidates)
         for f in candidates:
@@ -129,11 +82,11 @@ def _grep_lines_from_file(rng: random.Random) -> Example:
 def _find_files_not_containing(rng: random.Random) -> Example:
     """List files NOT containing a search term under a directory, sorted."""
     while True:
-        files = _build_workspace(rng)
+        files = build_workspace(rng)
         dirs = sorted({f.path.split("/")[0] for f in files})
         target_dir = rng.choice(dirs)
         dir_files = [f for f in files if f.path.startswith(f"{target_dir}/")]
-        if len(dir_files) < 2:
+        if len(dir_files) < 3:
             continue
         terms = list(_SEARCH_TERMS)
         rng.shuffle(terms)
@@ -142,7 +95,6 @@ def _find_files_not_containing(rng: random.Random) -> Example:
             not_containing = sorted(
                 f.path for f in dir_files if term not in f.content
             )
-            # Need both some containing and some not for a useful task.
             if containing and not_containing:
                 task = (
                     f"Print the paths of files under {target_dir}/ that do NOT "
@@ -152,10 +104,152 @@ def _find_files_not_containing(rng: random.Random) -> Example:
                 return _make_example(task, files, expected)
 
 
+def _count_matching_lines(rng: random.Random) -> Example:
+    """Count total matching lines across files under a directory."""
+    while True:
+        files = build_workspace(rng)
+        dirs = sorted({f.path.split("/")[0] for f in files})
+        target_dir = rng.choice(dirs)
+        dir_files = [f for f in files if f.path.startswith(f"{target_dir}/")]
+        if len(dir_files) < 3:
+            continue
+        terms = list(_SEARCH_TERMS)
+        rng.shuffle(terms)
+        for term in terms:
+            total = 0
+            for f in dir_files:
+                total += sum(1 for line in f.content.split("\n") if term in line)
+            if total >= 2:
+                task = (
+                    f"How many lines in files under {target_dir}/ contain '{term}'?"
+                )
+                expected = f"{total}\n"
+                return _make_example(task, files, expected)
+
+
+def _find_files_containing_by_extension(rng: random.Random) -> Example:
+    """Find files with a specific extension containing a search term."""
+    while True:
+        files = build_workspace(rng)
+        dirs = sorted({f.path.split("/")[0] for f in files})
+        target_dir = rng.choice(dirs)
+        dir_files = [f for f in files if f.path.startswith(f"{target_dir}/")]
+        exts = list({_file_ext(f.path) for f in dir_files if "." in f.path})
+        rng.shuffle(exts)
+        for ext in exts:
+            ext_files = [f for f in dir_files if f.path.endswith(ext)]
+            if len(ext_files) < 2:
+                continue
+            terms = list(_SEARCH_TERMS)
+            rng.shuffle(terms)
+            for term in terms:
+                matches = sorted(
+                    f.path for f in ext_files if term in f.content
+                )
+                non_matches = [f for f in ext_files if term not in f.content]
+                if matches and non_matches:
+                    task = (
+                        f"Print the paths of {ext} files under {target_dir}/ "
+                        f"that contain '{term}', one per line, sorted."
+                    )
+                    expected = "\n".join(matches) + "\n"
+                    return _make_example(task, files, expected)
+
+
+def _find_files_two_terms(rng: random.Random) -> Example:
+    """Find files containing one term but not another."""
+    while True:
+        files = build_workspace(rng)
+        dirs = sorted({f.path.split("/")[0] for f in files})
+        target_dir = rng.choice(dirs)
+        dir_files = [f for f in files if f.path.startswith(f"{target_dir}/")]
+        if len(dir_files) < 4:
+            continue
+        terms = list(_SEARCH_TERMS)
+        rng.shuffle(terms)
+        for i, term_a in enumerate(terms):
+            for term_b in terms[i + 1:]:
+                matches = sorted(
+                    f.path for f in dir_files
+                    if term_a in f.content and term_b not in f.content
+                )
+                if len(matches) >= 1 and len(matches) < len(dir_files):
+                    task = (
+                        f"Print the paths of files under {target_dir}/ that "
+                        f"contain '{term_a}' but do NOT contain '{term_b}', "
+                        f"one per line, sorted."
+                    )
+                    expected = "\n".join(matches) + "\n"
+                    return _make_example(task, files, expected)
+
+
+def _count_files_containing(rng: random.Random) -> Example:
+    """Count files containing a search term under a directory."""
+    while True:
+        files = build_workspace(rng)
+        dirs = sorted({f.path.split("/")[0] for f in files})
+        target_dir = rng.choice(dirs)
+        dir_files = [f for f in files if f.path.startswith(f"{target_dir}/")]
+        if len(dir_files) < 3:
+            continue
+        terms = list(_SEARCH_TERMS)
+        rng.shuffle(terms)
+        for term in terms:
+            count = sum(1 for f in dir_files if term in f.content)
+            if 0 < count < len(dir_files):
+                task = (
+                    f"How many files under {target_dir}/ contain '{term}'?"
+                )
+                expected = f"{count}\n"
+                return _make_example(task, files, expected)
+
+
+def _find_files_containing_excluding_subdir(rng: random.Random) -> Example:
+    """Find files containing a term, excluding a subdirectory."""
+    while True:
+        files = build_workspace(rng)
+        subdir_pairs: list[tuple[str, str]] = []
+        for f in files:
+            parts = f.path.split("/")
+            if len(parts) >= 3:
+                pair = (parts[0], parts[1])
+                if pair not in subdir_pairs:
+                    subdir_pairs.append(pair)
+        if not subdir_pairs:
+            continue
+        rng.shuffle(subdir_pairs)
+        for top_dir, sub_dir in subdir_pairs:
+            excluded = f"{top_dir}/{sub_dir}/"
+            remaining = [
+                f for f in files
+                if f.path.startswith(f"{top_dir}/")
+                and not f.path.startswith(excluded)
+            ]
+            if len(remaining) < 2:
+                continue
+            terms = list(_SEARCH_TERMS)
+            rng.shuffle(terms)
+            for term in terms:
+                matches = sorted(f.path for f in remaining if term in f.content)
+                if matches:
+                    task = (
+                        f"Print the paths of files under {top_dir}/ "
+                        f"(excluding {top_dir}/{sub_dir}/) that contain "
+                        f"'{term}', one per line, sorted."
+                    )
+                    expected = "\n".join(matches) + "\n"
+                    return _make_example(task, files, expected)
+
+
 _SUB_TYPES = [
     _find_files_containing,
     _grep_lines_from_file,
     _find_files_not_containing,
+    _count_matching_lines,
+    _find_files_containing_by_extension,
+    _find_files_two_terms,
+    _count_files_containing,
+    _find_files_containing_excluding_subdir,
 ]
 
 

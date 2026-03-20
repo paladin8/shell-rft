@@ -56,13 +56,31 @@ def test_expected_stdout_is_non_empty():
         assert len(ex.expected_stdout.strip()) > 0
 
 
+def test_csv_has_header_row():
+    """CSV files must have a header row."""
+    for ex in generate_csv_filtering_examples(10, random.Random(42)):
+        for f in ex.workspace_spec.files:
+            if f.path.endswith(".csv"):
+                first_line = f.content.split("\n")[0]
+                assert any(c.isalpha() for c in first_line), f"Header missing: {first_line}"
+
+
 def test_all_sub_types_exercised():
-    """All 3 sub-types should appear across a reasonable sample."""
-    examples = generate_csv_filtering_examples(100, random.Random(42))
+    """All 14 sub-types should appear across a reasonable sample."""
+    examples = generate_csv_filtering_examples(500, random.Random(42))
     tasks = [ex.messages[1]["content"] for ex in examples]
-    # _numeric_filter: "Print ... greater than ..."
-    assert any("Print" in t and "greater than" in t for t in tasks)
-    # _string_filter: "is '..."
-    assert any("is '" in t for t in tasks)
-    # _count_by_numeric: "How many ..."
-    assert any("How many" in t for t in tasks)
+    patterns = {
+        "numeric_filter": lambda t: "Print" in t and "greater than" in t and "and" not in t and "sorted" not in t,
+        "string_filter": lambda t: "is '" in t and "and" not in t and "How many" not in t and "sorted" not in t,
+        "count_by_numeric": lambda t: "How many" in t and "greater than" in t and "and" not in t,
+        "multi_condition": lambda t: "and" in t and "greater than" in t and "Print" in t,
+        "sorted_filter": lambda t: "sorted alphabetically" in t,
+        "count_by_category": lambda t: "How many" in t and "equal to" in t and "and" not in t,
+        "max_min": lambda t: "highest" in t or "lowest" in t,
+        "top_n": lambda t: "highest" in t and "one per line" in t,
+        "count_distinct": lambda t: "distinct" in t,
+        "sum": lambda t: "sum of" in t,
+        "between": lambda t: "between" in t,
+    }
+    for name, check in patterns.items():
+        assert any(check(t) for t in tasks), f"No examples for sub-type: {name}"

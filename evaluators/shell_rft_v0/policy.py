@@ -7,6 +7,7 @@ import bashlex
 ALLOWED_COMMANDS = frozenset([
     "find", "grep", "sort", "head", "tail",
     "wc", "cut", "awk", "sed", "cat", "xargs", "tr",
+    "ls", "du", "stat",
 ])
 
 # Dangerous find flags that modify the filesystem or execute commands.
