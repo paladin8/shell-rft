@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Shell RFT evaluator for Fireworks Build SDK"
 requires-python = ">=3.11"
 dependencies = [
+    "bashlex>=0.18",
     "fireworks-ai[reward-kit]",
 ]
 

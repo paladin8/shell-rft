@@ -1,9 +1,12 @@
 """Evaluator entry point for Fireworks Build SDK."""
 
+import logging
 import shutil
 import tempfile
 
 from reward_kit import reward_function
+
+logger = logging.getLogger(__name__)
 
 from shell_rft_v0.normalize import normalize_stdout
 from shell_rft_v0.policy import extract_single_command, validate_command
@@ -25,6 +28,7 @@ def evaluate(
     try:
         return _evaluate_inner(messages, workspace_spec, expected_stdout, task_type)
     except Exception:
+        logger.exception("Evaluator internal error")
         return {"score": 0.0, "reason": "internal error"}
 
 
